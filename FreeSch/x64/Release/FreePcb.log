@@ -1,0 +1,73 @@
+﻿  afxasert.cpp
+  BomInTable.cpp
+C:\Users\ROMAN.Lenovo-PC\Documents\GitHub\Schematic-Constructor\stdafx.h(53,10): warning C4005: assert: изменение макроопределения
+  (компиляция исходного файла "afxasert.cpp")
+      C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\ucrt\assert.h(39,13):
+      см. предыдущее определение "assert"
+  
+C:\Users\ROMAN.Lenovo-PC\Documents\GitHub\Schematic-Constructor\afxasert.cpp(21,13): error C2084: функция "BOOL AfxAssertFailedLine(LPCSTR,int)" уже имеет текст реализации
+      C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\atlmfc\include\afx.h(315,20):
+      см. предыдущее определение "AfxAssertFailedLine"
+  
+C:\Users\ROMAN.Lenovo-PC\Documents\GitHub\Schematic-Constructor\stdafx.h(53,10): warning C4005: assert: изменение макроопределения
+  (компиляция исходного файла "BomInTable.cpp")
+      C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\ucrt\assert.h(39,13):
+      см. предыдущее определение "assert"
+  
+C:\Users\ROMAN.Lenovo-PC\Documents\GitHub\Schematic-Constructor\BomInTable.cpp(292,7): warning C4311: приведение типов: усечение указателя из "HINSTANCE" в "UINT"
+  CCompare.cpp
+C:\Users\ROMAN.Lenovo-PC\Documents\GitHub\Schematic-Constructor\stdafx.h(53,10): warning C4005: assert: изменение макроопределения
+  (компиляция исходного файла "CCompare.cpp")
+      C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\ucrt\assert.h(39,13):
+      см. предыдущее определение "assert"
+  
+  ComponentNoteExt.cpp
+C:\Users\ROMAN.Lenovo-PC\Documents\GitHub\Schematic-Constructor\stdafx.h(53,10): warning C4005: assert: изменение макроопределения
+  (компиляция исходного файла "ComponentNoteExt.cpp")
+      C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\ucrt\assert.h(39,13):
+      см. предыдущее определение "assert"
+  
+  Cuid.cpp
+C:\Users\ROMAN.Lenovo-PC\Documents\GitHub\Schematic-Constructor\stdafx.h(53,10): warning C4005: assert: изменение макроопределения
+  (компиляция исходного файла "Cuid.cpp")
+      C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\ucrt\assert.h(39,13):
+      см. предыдущее определение "assert"
+  
+  DesignRules.cpp
+C:\Users\ROMAN.Lenovo-PC\Documents\GitHub\Schematic-Constructor\stdafx.h(53,10): warning C4005: assert: изменение макроопределения
+  (компиляция исходного файла "DesignRules.cpp")
+      C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\ucrt\assert.h(39,13):
+      см. предыдущее определение "assert"
+  
+C:\Users\ROMAN.Lenovo-PC\Documents\GitHub\Schematic-Constructor\DesignRules.cpp(100,16): warning C4311: приведение типов: усечение указателя из "DRError *" в "unsigned int"
+  DisplayList.cpp
+C:\Users\ROMAN.Lenovo-PC\Documents\GitHub\Schematic-Constructor\stdafx.h(53,10): warning C4005: assert: изменение макроопределения
+  (компиляция исходного файла "DisplayList.cpp")
+      C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\ucrt\assert.h(39,13):
+      см. предыдущее определение "assert"
+  
+  DlgAddMaskCutout.cpp
+C:\Users\ROMAN.Lenovo-PC\Documents\GitHub\Schematic-Constructor\stdafx.h(53,10): warning C4005: assert: изменение макроопределения
+  (компиляция исходного файла "DlgAddMaskCutout.cpp")
+      C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\ucrt\assert.h(39,13):
+      см. предыдущее определение "assert"
+  
+  DlgAddMerge.cpp
+C:\Users\ROMAN.Lenovo-PC\Documents\GitHub\Schematic-Constructor\stdafx.h(53,10): warning C4005: assert: изменение макроопределения
+  (компиляция исходного файла "DlgAddMerge.cpp")
+      C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\ucrt\assert.h(39,13):
+      см. предыдущее определение "assert"
+  
+  DlgAddPoly.cpp
+C:\Users\ROMAN.Lenovo-PC\Documents\GitHub\Schematic-Constructor\stdafx.h(53,10): warning C4005: assert: изменение макроопределения
+  (компиляция исходного файла "DlgAddPoly.cpp")
+      C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\ucrt\assert.h(39,13):
+      см. предыдущее определение "assert"
+  
+  DlgAddText.cpp
+C:\Users\ROMAN.Lenovo-PC\Documents\GitHub\Schematic-Constructor\stdafx.h(53,10): warning C4005: assert: изменение макроопределения
+  (компиляция исходного файла "DlgAddText.cpp")
+      C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\ucrt\assert.h(39,13):
+      см. предыдущее определение "assert"
+  
+  DlgAddWidth.cpp
