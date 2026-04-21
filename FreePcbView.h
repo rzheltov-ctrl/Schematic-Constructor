@@ -138,6 +138,7 @@ enum {
 	FK_SET_LENGTH,
 	FK_ADD_SIZE,
 	FK_ADD_NODE,
+	FK_IMPORT_MERGE,
 	//									
 	FK_NUM_OPTIONS,						
 	FK_ARROW							
@@ -352,6 +353,7 @@ const char fk_str[FK_NUM_OPTIONS * 2 + 2][32] =
 " Задать",		" длину",
 " Замер", " длины",
 " Ввести", " концевик",
+" Импорт", " слияния",
 //
 "",	        ""
 };
@@ -641,6 +643,8 @@ public:
 	CPoint m_snap_angle_ref;	// reference point for snap angle
 	int m_snap_mode;			// snap mode
 	int m_inflection_mode;		// inflection mode for routing
+	int m_targetline_alignment_X;
+	int m_targetline_alignment_Y;
 
 	// window parameters
 	CPoint m_client_origin;	// coordinates of (0,0) in screen coords

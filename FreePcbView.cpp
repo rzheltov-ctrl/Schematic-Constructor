@@ -360,6 +360,8 @@ void CFreePcbView::InitializeView()
 	m_disable_context_menu = 0;
 	m_sel_rect = rect(0,0,0,0);
 	m_draw_pic = "";
+	m_targetline_alignment_X = 0;
+	m_targetline_alignment_Y = 0;
 	Invalidate( FALSE );// (doubtful)
 }
 //===============================================================================================
@@ -681,8 +683,11 @@ void CFreePcbView::OnDraw(CDC* pDC)
 	// now draw the display list
 	SetDCToWorldCoords( pDC );
 	m_Doc->m_dlist->Draw( pDC, m_draw_layer );
-	if( CurDragging() )
-		m_Doc->m_dlist->Drag(  pDC, m_last_cursor_point.x, m_last_cursor_point.y );
+	if (CurDragging())
+	{
+		///m_targetline_alignment_X = m_targetline_alignment_Y = 0;!!!
+		m_Doc->m_dlist->Drag(pDC, m_last_cursor_point.x, m_last_cursor_point.y);
+	}
 
 	CDC * gDC = GetDC();
 	// Interpage Attribute Syncronization
@@ -1630,7 +1635,9 @@ void CFreePcbView::OnLButtonUp(UINT nFlags, CPoint point)
 					if( m_sel_op.Check(index_desc_attr) )
 						if( m_sel_op.pAttr[index_desc_attr]->m_str.Right(3) == "BOM" )
 							BOM_PATH = m_sel_op.pAttr[index_desc_attr];
-				MoveGroup( dx, dy, BOM_PATH );
+				MoveGroup( dx - m_targetline_alignment_X, dy - m_targetline_alignment_Y, BOM_PATH );
+				m_last_cursor_point.x -= m_targetline_alignment_X;
+				m_last_cursor_point.y -= m_targetline_alignment_Y;
 				OnGroupGridMagnetize( m_Doc );
 				m_Doc->m_dlist->CancelHighLight();
 				
@@ -1860,6 +1867,8 @@ void CFreePcbView::OnLButtonUp(UINT nFlags, CPoint point)
 			else if( m_cursor_mode == CUR_DRAG_MEASURE_1 )
 			{
 				m_measure_dist = 0;
+				m_last_cursor_point.x -= m_targetline_alignment_X;
+				m_last_cursor_point.y -= m_targetline_alignment_Y;
 				m_from_pt = m_last_cursor_point;
 				m_Doc->m_dlist->MakeDragRatlineArray( 1, 1 );
 				m_Doc->m_dlist->AddDragRatline( m_from_pt, zero ); 
@@ -1867,6 +1876,8 @@ void CFreePcbView::OnLButtonUp(UINT nFlags, CPoint point)
 			}
 			else if( m_cursor_mode == CUR_DRAG_MEASURE_2 )
 			{
+				m_last_cursor_point.x -= m_targetline_alignment_X;
+				m_last_cursor_point.y -= m_targetline_alignment_Y;
 				int dst = Distance( m_from_pt.x, m_from_pt.y, m_last_cursor_point.x, m_last_cursor_point.y );
 				float cur_ang = Angle( m_from_pt.x, m_from_pt.y, m_last_cursor_point.x, m_last_cursor_point.y );
 				m_measure_dist += dst;
@@ -2134,9 +2145,6 @@ void CFreePcbView::OnKeyUp(UINT nChar, UINT nRepCnt, UINT nFlags)
 	}
 	if( nChar == 'D' )
 	{
-		CMainFrame* frm = (CMainFrame*)AfxGetMainWnd();
-		if (frm)
-			frm->SetTimer(TMR_DRC, INT_MAX-1, 0);
 		m_Doc->m_drelist->MakeHollowCircles();
 		m_draw_layer = LAY_DRC_ERROR;// if( nChar == 'D' )
 	}
@@ -2188,6 +2196,9 @@ void CFreePcbView::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 		gShiftKeyDown = TRUE;
 	if( nChar == 'D' )
 	{
+		CMainFrame* frm = (CMainFrame*)AfxGetMainWnd();
+		if (frm && gShiftKeyDown == 0)
+			frm->SetTimer(TMR_DRC, INT_MAX - 1, 0);
 		m_Doc->m_drelist->MakeSolidCircles(2500);
 		m_draw_layer = LAY_DRC_ERROR;// if( nChar == 'D' )
 	}
@@ -2429,6 +2440,10 @@ void CFreePcbView::HandleKeyPress(UINT nChar, UINT nRepCnt, UINT nFlags)
 		else if( fk == FK_COMPONENT_NOTES )
 		{
 			m_Doc->OnOpenComponentDatasheets();
+		}
+		else if( fk == FK_IMPORT_MERGE )
+		{
+			OnImportMerges();
 		}
 		break;
 
@@ -3547,8 +3562,11 @@ void CFreePcbView::SetFKText( int mode )
 					m_fkey_option[2] = FK_ADD_LINE;
 					if( m_polyline_layer )
 						m_fkey_option[3] = FK_REPEAT_LINE;
+					m_fkey_option[5] = FK_IMPORT_MERGE;
 				}
 			}
+			//else
+			//	m_fkey_option[2] = FK_SIDE;
 		}
 		break;
 
@@ -6905,7 +6923,83 @@ void CFreePcbView::SnapCursorPoint( CPoint wp, UINT nFlags )
 				return;
 			}
 			else
-				m_Doc->m_dlist->Drag( pDC, wp.x, wp.y );
+			{
+				// update alignment target
+				m_Doc->m_dlist->DeleteTargetLines();
+				int min_X = abs(m_Doc->m_dlist->m_max_x - m_Doc->m_dlist->m_org_x) / 2 * m_pcbu_per_wu;
+				int min_Y = abs(m_Doc->m_dlist->m_max_y - m_Doc->m_dlist->m_org_y) / 2 * m_pcbu_per_wu;
+				CPoint BEST_PT1(0, 0);
+				CPoint BEST_PT2(0, 0);
+				m_targetline_alignment_X = m_targetline_alignment_Y = 0;
+				if ((m_cursor_mode == CUR_DRAG_GROUP || 
+					m_cursor_mode == CUR_DRAG_GROUP_ADD || 
+					m_cursor_mode == CUR_DRAG_MEASURE_1 ||
+					m_cursor_mode == CUR_DRAG_MEASURE_2))// &&
+					//getbit(m_sel_flags,FLAG_SEL_OP))
+				{
+					for (int ip0 = 0; ip0 < m_Doc->m_outline_poly->GetSize(); ip0++)
+					{
+						CPolyLine* p = &m_Doc->m_outline_poly->GetAt(ip0);
+						if (p->m_visible && p->GetSel() == 0)
+						{
+							for (int ip1 = 0; ip1 < p->GetNumCorners(); ip1++)
+							{
+								int dist_x = abs(wp.x - p->GetX(ip1));
+								int dist_y = abs(wp.y - p->GetY(ip1));
+								if ((float)dist_x < (float)m_Doc->m_part_grid_spacing/m_user_scale)
+								{
+									if (dist_y < min_Y)
+									{
+										min_Y = dist_y;
+										BEST_PT1 = CPoint(p->GetX(ip1), p->GetY(ip1));
+										//CPoint pt1(p->GetX(ip1), p->GetY(ip1));
+										//CPoint pt2(p->GetX(ip1) + NM_PER_MM, p->GetY(ip1) + NM_PER_MM);
+										//m_Doc->m_dlist->AddDragATargetLine(pt1, pt2);
+									}
+								}
+								if ((float)dist_y < (float)m_Doc->m_part_grid_spacing/m_user_scale)
+								{
+									if (dist_x < min_X)
+									{
+										min_X = dist_x;
+										BEST_PT2 = CPoint(p->GetX(ip1), p->GetY(ip1));
+										//CPoint pt1(p->GetX(ip1), p->GetY(ip1));
+										//CPoint pt2(p->GetX(ip1) + NM_PER_MM, p->GetY(ip1) + NM_PER_MM);
+										//m_Doc->m_dlist->AddDragATargetLine(pt1, pt2);
+									}
+								}
+							}
+						}
+					}
+				}
+				if (BEST_PT1.x && BEST_PT1.y)//(min_Y < INT_MAX)
+				{
+					int NM_PER = (float)m_Doc->m_part_grid_spacing/m_user_scale;
+					m_targetline_alignment_X = wp.x - BEST_PT1.x;
+					CPoint pt1(BEST_PT1.x + NM_PER, BEST_PT1.y);
+					CPoint pt2(BEST_PT1.x - NM_PER, BEST_PT1.y);
+					CPoint pt3(BEST_PT1.x, BEST_PT1.y + NM_PER);
+					CPoint pt4(BEST_PT1.x, BEST_PT1.y - NM_PER);
+					m_Doc->m_dlist->AddDragATargetLine(pt3, pt1);
+					m_Doc->m_dlist->AddDragATargetLine(pt3, pt2);
+					m_Doc->m_dlist->AddDragATargetLine(pt2, pt4);
+					m_Doc->m_dlist->AddDragATargetLine(pt1, pt4);
+				}
+				if (BEST_PT2.x && BEST_PT2.y)//(min_X < INT_MAX)
+				{
+					int NM_PER = (float)m_Doc->m_part_grid_spacing/m_user_scale + NM_PER_MIL;
+					m_targetline_alignment_Y = wp.y - BEST_PT2.y;
+					CPoint pt1(BEST_PT2.x + NM_PER, BEST_PT2.y);
+					CPoint pt2(BEST_PT2.x - NM_PER, BEST_PT2.y);
+					CPoint pt3(BEST_PT2.x, BEST_PT2.y + NM_PER);
+					CPoint pt4(BEST_PT2.x, BEST_PT2.y - NM_PER);
+					m_Doc->m_dlist->AddDragATargetLine(pt3, pt1);
+					m_Doc->m_dlist->AddDragATargetLine(pt3, pt2);
+					m_Doc->m_dlist->AddDragATargetLine(pt2, pt4);
+					m_Doc->m_dlist->AddDragATargetLine(pt1, pt4);
+				}
+				m_Doc->m_dlist->Drag(pDC, wp.x, wp.y);
+			}
 			ReleaseDC( pDC );
 			// show relative distance
 			if( m_cursor_mode == CUR_DRAG_GROUP
@@ -7584,13 +7678,16 @@ int CFreePcbView::FindStrInFile( CString * file,
 					int np = ParseKeyString( &instr, &key_str, &ss );
 					if( np >= 2 )
 					{
-						m_index++;
-						int ret_v = m_Doc->m_merge_library.AddItem( &ss.GetAt(0), m_index );
-						if( ret_v == 1 )
+						if (ss.GetAt(0).Find("PCBVIEW") == -1)
 						{
-							m_Doc->m_dlg_log->AddLine( "added merge index: "+ss.GetAt(0)+"\r\n" );
-							if(iterator%32==0)
-								m_Doc->m_dlg_log->UpdateWindow();
+							m_index++;
+							int ret_v = m_Doc->m_merge_library.AddItem(&ss.GetAt(0), m_index);
+							if (ret_v == 1)
+							{
+								m_Doc->m_dlg_log->AddLine("added merge index: " + ss.GetAt(0) + "\r\n");
+								if (iterator % 32 == 0)
+									m_Doc->m_dlg_log->UpdateWindow();
+							}
 						}
 					}
 				}
@@ -11564,7 +11661,8 @@ void CFreePcbView::OnSelectObjectByAttr()
 	if( m_sel_text )
 		if( m_sel_text->m_polyline_start >= 0 )
 			if( m_sel_text->m_polyline_start < m_Doc->m_outline_poly->GetSize() )
-				if( m_Doc->m_outline_poly->GetAt(m_sel_text->m_polyline_start).Check( index_part_attr ) )
+				if( m_Doc->m_outline_poly->GetAt(m_sel_text->m_polyline_start).Check( index_part_attr ) &&
+					(m_sel_mask & (1 << SEL_MASK_PART)))
 					SelectByAttr(0);
 				else
 					SelectByAttr(1);
@@ -11585,7 +11683,7 @@ void CFreePcbView::SelectByAttr( BOOL bPOLY )
 					if( t->m_polyline_start >= 0 )
 						if( bPOLY )
 						{
-							if( m_Doc->m_outline_poly->GetAt(t->m_polyline_start).Check( index_part_attr ) == 0 )
+							//if( m_Doc->m_outline_poly->GetAt(t->m_polyline_start).Check( index_part_attr ) == 0 )
 							{
 								id pID( ID_POLYLINE, ID_GRAPHIC, t->m_polyline_start, ID_SIDE, -1 );
 								if( m_Doc->m_outline_poly->GetAt(t->m_polyline_start).Check( index_net_attr ) ||
@@ -16022,7 +16120,7 @@ void CFreePcbView::OnGroupSaveToFPCFile()
 		//		sFont = 0;
 		CString s;
 		f.WriteString("[options]\n");
-		f.WriteString("file_version: 2.427\n");
+		f.WriteString("file_version: 2.429\n");
 		f.WriteString("[footprints]\n");
 		f.WriteString("[board]\n");
 		f.WriteString("[solder_mask_cutouts]\n");

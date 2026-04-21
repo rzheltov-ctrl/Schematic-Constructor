@@ -47,6 +47,8 @@ CDisplayList::CDisplayList()
 	m_drag_num_lines = 0;
 	m_drag_line_pt = 0;
 	m_drag_num_ratlines = 0;
+	m_drag_num_alignment_target = 0;
+	m_prev_targetline = 0;
 	m_drag_ratline_start_pt = 0;
 	m_drag_ratline_end_pt = 0;
 	m_drag_ratline_width = 0;
@@ -2316,6 +2318,32 @@ void CDisplayList::Drag( CDC * pDC, int x, int y )
 		pDC->SelectObject( old_pen );
 	}
 
+	// drag array of lines, used to align group objects
+	if (m_drag_num_alignment_target || m_prev_targetline)
+	{
+		CPen drag_pen(PS_SOLID, 1, drag_color);
+		CPen* old_pen = pDC->SelectObject(&drag_pen);
+		for (int il = 0; il < m_prev_targetline; il++)
+		{
+			// undraw
+			if (m_drag_start)
+			{
+				pDC->MoveTo(m_prev_targetline_pt[2 * il].x, m_prev_targetline_pt[2 * il].y);
+				pDC->LineTo(m_prev_targetline_pt[2 * il + 1].x, m_prev_targetline_pt[2 * il + 1].y);
+			}
+		}
+		for (int il = 0; il < m_drag_num_alignment_target; il++)
+		{
+			// redraw
+			pDC->MoveTo(m_drag_alignment_targetline_pt[2 * il].x, m_drag_alignment_targetline_pt[2 * il].y);
+			pDC->LineTo(m_drag_alignment_targetline_pt[2 * il + 1].x, m_drag_alignment_targetline_pt[2 * il + 1].y);
+			m_prev_targetline_pt[2 * il] = m_drag_alignment_targetline_pt[2 * il];
+			m_prev_targetline_pt[2 * il + 1] = m_drag_alignment_targetline_pt[2 * il + 1];
+		}
+		m_prev_targetline = m_drag_num_alignment_target;
+		pDC->SelectObject(old_pen);
+	}
+
 	// draw special shapes, used for polyline sides and trace segments
 	if( m_drag_flag )
 	{
@@ -2697,6 +2725,7 @@ int CDisplayList::StopDragging()
 	m_drag_flag = 0;
 	m_drag_num_lines = 0;
 	m_drag_num_ratlines = 0;
+	m_drag_num_alignment_target = 0;
 	m_cross_hairs = 0;
 	m_last_drag_shape = DS_NONE;
 	return 0;
@@ -2728,7 +2757,12 @@ void CDisplayList::IncrementDragAngle( CDC * pDC )
 		pDC->MoveTo( m_drag_ratline_start_pt[il].x, m_drag_ratline_start_pt[il].y );
 		pDC->LineTo( m_drag_x+m_drag_ratline_end_pt[il].x, m_drag_y+m_drag_ratline_end_pt[il].y );
 	}
-		
+	/*for (int il = 0; il<m_prev_targetline; il++)
+	{
+		pDC->MoveTo(m_prev_targetline_pt[2*il].x, m_prev_targetline_pt[2*il].y);
+		pDC->LineTo(m_prev_targetline_pt[2*il + 1].x, m_prev_targetline_pt[2*il+1].y);
+	}*/
+
 	// rotate points, redraw lines
 	for( int il=0; il<m_drag_num_lines; il++ )
 	{
@@ -2743,7 +2777,16 @@ void CDisplayList::IncrementDragAngle( CDC * pDC )
 		pDC->MoveTo( m_drag_ratline_start_pt[il].x, m_drag_ratline_start_pt[il].y );
 		pDC->LineTo( m_drag_x+m_drag_ratline_end_pt[il].x, m_drag_y+m_drag_ratline_end_pt[il].y );
 	}
-
+	/*for (int il = 0; il < m_drag_num_alignment_target; il++)
+	{
+		RotatePoint(&m_drag_alignment_targetline_pt[2 * il], -90, zero);
+		RotatePoint(&m_drag_alignment_targetline_pt[2 * il + 1], -90, zero);
+		pDC->MoveTo(m_drag_alignment_targetline_pt[2 * il].x, m_drag_alignment_targetline_pt[2 * il].y);
+		pDC->LineTo(m_drag_alignment_targetline_pt[2 * il + 1].x, m_drag_alignment_targetline_pt[2 * il + 1].y);
+		m_prev_targetline_pt[2 * il] = m_drag_alignment_targetline_pt[2 * il];
+		m_prev_targetline_pt[2 * il + 1] = m_drag_alignment_targetline_pt[2 * il + 1];
+	}
+	m_prev_targetline = m_drag_num_alignment_target;*/
 	pDC->SelectObject( old_pen );
 	pDC->SetROP2( old_ROP2 );
 }
@@ -2858,6 +2901,24 @@ int CDisplayList::AddDragLine( CPoint pi, CPoint pf )
 	m_drag_line_pt[2*m_drag_num_lines+1].y = pf.y/m_pcbu_per_wu;
 	m_drag_num_lines++;
 	return 0;
+}
+
+int CDisplayList::AddDragATargetLine(CPoint pi, CPoint pf, int size)
+{
+	if (m_drag_num_alignment_target >= MAX_TARGETLINES/2)
+		return  1;
+
+	m_drag_alignment_targetline_pt[2 * m_drag_num_alignment_target].x = pi.x / m_pcbu_per_wu;
+	m_drag_alignment_targetline_pt[2 * m_drag_num_alignment_target].y = pi.y / m_pcbu_per_wu;
+	m_drag_alignment_targetline_pt[2 * m_drag_num_alignment_target + 1].x = pf.x / m_pcbu_per_wu;
+	m_drag_alignment_targetline_pt[2 * m_drag_num_alignment_target + 1].y = pf.y / m_pcbu_per_wu;
+	m_drag_num_alignment_target++;
+	return 0;
+}
+
+void CDisplayList::DeleteTargetLines()
+{
+	m_drag_num_alignment_target = 0;
 }
 
 int CDisplayList::AddDragRatline( CPoint pi, CPoint pf )
